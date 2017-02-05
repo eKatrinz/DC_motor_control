@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-
 // Макросы
 
 #define sbit(port,bit) (port)|=(1<<(bit))
@@ -26,6 +25,8 @@
 
 // Порт для подключения экрана LCD Nokia 3310/5110
 
+#define China_Display_Value 20
+
 #define LCD_PORT      PORTB
 #define LCD_DDR       DDRB
 
@@ -33,8 +34,6 @@
 #define  DC_PIN		1
 #define  DIN_PIN	2
 #define  SCK_PIN	3
-#define  LED_PIN    4
-
 
 // Константы для экрана LCD Nokia 3310/5110
 
@@ -844,11 +843,9 @@ static unsigned char FONT5x7[] PROGMEM =
   0x48, 0x34, 0x14, 0x14, 0x7c
 };
 
-
-
-
 //
 u08 nokia_where_x(void);
+//
 u08 nokia_where_y(void);
 //
 u08 nokia_get_contrast(void);
@@ -856,18 +853,18 @@ u08 nokia_get_contrast(void);
 u08 nokia_get_inverse(void);
 //
 void nokia_w(u08 ch);
-
 //
 void nokia_cmd(u08 cmd);
 //
 void nokia_data(u08 ch);
-static void nokia_set_addr(u08 x, u08 y);
+//
+void nokia_set_addr(u08 x, u08 y);
+//
 void nokia_gotoxy(u08 x, u08 y);
 //
 void nokia_putchar(u08 ch);
 //
 void nokia_puts(const u08 *s);
-
 //
 void nokia_puts_prgm(const char *s);
 //
@@ -880,11 +877,9 @@ void nokia_2puts(u08 *s);
 void nokia_set_contrast(u08 contrast);
 //
 void nokia_set_inverse(u08 inv);
-
 //
 void nokia_init(void);
 //
 void nokia_clear(void);
-
 
 //////////////////////////////////////////////////////////////

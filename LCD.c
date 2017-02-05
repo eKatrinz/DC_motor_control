@@ -72,7 +72,7 @@ void nokia_data(u08 ch)
 }
 
 //
-static void nokia_set_addr(u08 x, u08 y)
+void nokia_set_addr(u08 x, u08 y)
 {
 	if (y > 5) { y = 5; }
 	if (x > GLCD_PIXELX - 1) { x = GLCD_PIXELX - 1; }
@@ -216,7 +216,7 @@ void nokia_init(void)
 	nokia_cmd(GLCD_FUNCTIONSETEXT);
 	nokia_cmd(GLCD_TEMPCOEF);
 	nokia_cmd(GLCD_SET_BIAS | GLCD_BIAS_1_10);
-	nokia_set_contrast(24);
+	nokia_set_contrast(China_Display_Value);
 	nokia_set_inverse(FALSE);
 	wdt_reset();
 }
