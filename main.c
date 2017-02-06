@@ -1,4 +1,4 @@
-#define F_CPU 16000000UL
+#define F_CPU 1000000UL
 
 #define baudrate 9600L
 #define bauddivider ((F_CPU/(16*baudrate))-1)
@@ -21,36 +21,64 @@
 #include <stdint.h>
 #include "LCD.h"
 
+#define MODE_QUANTITY 3
+#define CURRENT_MODE 0
+#define RPS_MODE 1
+#define POTENT_MODE 2
+
+
+
+typedef struct {
+	unsigned int encoder;
+	
+	char name;
+} Mode;
+
 //////////////////////////////////////////////////////////////
 
-static volatile u08 ms_ticks_byte;
+volatile u08 ms_ticks_byte;
 
 
-static volatile unsigned int Hall_sensor_tick=0;
-static volatile unsigned int *Encoder_tick;
-static volatile unsigned int delta_tick;
-static volatile unsigned int rps=0;
-static volatile unsigned int current=0;
-static volatile unsigned char FLAG;
-static volatile unsigned char MODE=0;
-static volatile unsigned char IF_UPDATE;
+
+volatile Mode mode_array[MODE_QUANTITY];
+volatile unsigned char global_mode;
+
+volatile unsigned char IF_UPDATE;
 
 //////////////////////////////////////////////////////////////
 
 
 //
+void modeInit(){
+	mode_array[CURRENT_MODE].encoder = 0;
+	mode_array[CURRENT_MODE].name = 'T';
+	
+	mode_array[RPS_MODE].encoder = 0;
+	mode_array[RPS_MODE].name = 'O';
+
+	mode_array[POTENT_MODE].encoder = 0;
+	mode_array[POTENT_MODE].name = 'ÐŸ';
+	
+	global_mode=0;
+}
+
+
 void Global_Init(void)
 {
 cli();
 
 DDRD &= ~(1<<PD2|1<<PD3|1<<PD4);
-PORTD &= ~(1<<PD2|1<<PD3|1<<PD4);
+DDRD |= 1<<PD5;
+PORTD |= 1<<PD5;
+PORTD &= ~(1<<PD5);
+
+PORTD |= (1<<PD2|1<<PD3|1<<PD4);
 
 EICRA = 1<<ISC11|0<<ISC10|1<<ISC01|0<<ISC00;
 EIMSK = 1<<INT1|1<<INT0;
 
 IF_UPDATE = 1;
-Encoder_tick = &rps;
+modeInit();
 
 wdt_reset();
 wdt_enable(WDTO_2S);   
@@ -64,10 +92,7 @@ ISR(INT0_vect)
 {
 	
 	cli();
-	if(MODE = ~MODE)
-		Encoder_tick = &current;
-	else 
-		Encoder_tick = &rps;
+	if(++global_mode>=MODE_QUANTITY) global_mode = 0;
 	
 	IF_UPDATE = 1;
 	
@@ -79,37 +104,43 @@ ISR(INT0_vect)
 //
 ISR(INT1_vect)
 {
-    cli();
-	
+//    cli();
+	PORTD |= 1<<PD5;
+
 	char p = PIND;
-	
-	if((p>>PD4)&1)
-	
-	{	(*Encoder_tick)--;  }
-		
-	else
-	
-	{	(*Encoder_tick)++; }
-		
+	_delay_ms(1);
+	if(!((PIND>>PD3)&1)){
+		if((p>>PD4)&1){
+			if(mode_array[global_mode].encoder)
+				mode_array[global_mode].encoder--; 
+		}else{
+			mode_array[global_mode].encoder++; 
+		}
+		IF_UPDATE = 1;
+		EIFR &= ~(1<<INTF1);
+	}	
+	_delay_ms(100);
 	wdt_reset();
 	
-	IF_UPDATE = 1;
-	
-	sei();
+	PORTD &= ~(1<<PD5);
+//	sei();
 }
 void writeNumber(unsigned int value){
-	nokia_2putchar(value/10000+48);
-	nokia_2putchar(value%10000/1000+48); 
-	nokia_2putchar(value%10000%1000/100+48);
-	nokia_2putchar(value%10000%1000%100/10+48);
-	nokia_2putchar(value%10000%1000%100%10+48);
+	unsigned int _val;
+	char _flag = 0;
+	if(_flag | (_val = value/10000)) { nokia_2putchar(_val+48); _flag=1;}
+	if(_flag | (_val = value%10000/1000)) { nokia_2putchar(_val+48); _flag=1;}
+	if(_flag | (_val = value%10000%1000/100)) { nokia_2putchar(_val+48); _flag=1;}
+	if(_flag | (_val = value%10000%1000%100/10)) { nokia_2putchar(_val+48); _flag=1;}
+	_val = value%10000%1000%100%10;
+	nokia_2putchar(_val+48);
 }
 void writeRPM(){
 	nokia_gotoxy(11, 0);
-	nokia_puts_prgm(PSTR("îáð"));
+	nokia_puts_prgm(PSTR("Ð¾Ð±Ñ€"));
 
 	nokia_gotoxy(11, 1);
-	nokia_puts_prgm(PSTR("ìèí"));
+	nokia_puts_prgm(PSTR("Ð¼Ð¸Ð½"));
 }
 
 void writeCurrent(){
@@ -125,13 +156,11 @@ void writeCurrentValue(unsigned int value){
 	nokia_gotoxy(0, 2);
 	writeNumber(value);
 }
-void writeMode(unsigned char mode){
+void writeMode(){
 	nokia_gotoxy(0, 4);
-	if(mode)
-		nokia_2putchar('O');
-	else
-	
-		nokia_2putchar('T');
+	nokia_2putchar(mode_array[global_mode].name);
+	nokia_gotoxy(11, 4);
+	writeNumber(global_mode);
 }
 
 
@@ -152,17 +181,17 @@ int main(void)
 			IF_UPDATE = 0;
 			nokia_clear();
 			
-			writeRPMValue(rps);
+			writeRPMValue(mode_array[RPS_MODE].encoder);
 			writeRPM();
-			writeCurrentValue(current);
+			writeCurrentValue(mode_array[CURRENT_MODE].encoder);
 			writeCurrent();
-			writeMode(MODE);
+			writeMode();
 		//	nokia_gotoxy(11, 2);
-	//		nokia_puts_prgm(PSTR("êèðÿ"));
+	//		nokia_puts_prgm(PSTR("ÐºÐ¸Ñ€Ñ"));
 			
 			
 		}
-		_delay_ms(1);
+		_delay_ms(10);
 		wdt_reset();
 
 	}
