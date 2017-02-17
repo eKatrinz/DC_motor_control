@@ -192,7 +192,7 @@ int main(void)
 			writeCurrent();
 			writeMode();
 		//	nokia_gotoxy(11, 2);
-	//		nokia_puts_prgm(PSTR("киря"));
+	//		nokia_puts_prgm(PSTR("kirya"));
 			
 			
 		}
