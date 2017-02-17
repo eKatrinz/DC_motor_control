@@ -57,9 +57,18 @@ void modeInit(){
 	mode_array[RPS_MODE].name = 'O';
 
 	mode_array[POTENT_MODE].encoder = 0;
-	mode_array[POTENT_MODE].name = 'Рџ';
+	mode_array[POTENT_MODE].name = 'П';
 	
 	global_mode=0;
+}
+
+void init_pwm (void)
+{
+	DDRD |= 1<<PD5;
+	
+	TCCR0A=(1<<COM0B1)|(0<<WGM02)|(0<<WGM01)|(1<<WGM00); //На выводе OC1A единица, когда OCR1A==TCNT1, восьмибитный ШИМ
+	TCCR0B=(1<<CS00);//|(1<<CS02);		 //Делитель= /1024
+	OCR0B=0x88;			//Начальная яркость
 }
 
 
@@ -68,9 +77,6 @@ void Global_Init(void)
 cli();
 
 DDRD &= ~(1<<PD2|1<<PD3|1<<PD4);
-DDRD |= 1<<PD5;
-PORTD |= 1<<PD5;
-PORTD &= ~(1<<PD5);
 
 PORTD |= (1<<PD2|1<<PD3|1<<PD4);
 
@@ -105,10 +111,9 @@ ISR(INT0_vect)
 ISR(INT1_vect)
 {
 //    cli();
-	PORTD |= 1<<PD5;
 
 	char p = PIND;
-	_delay_ms(1);
+//	_delay_us(100);
 	if(!((PIND>>PD3)&1)){
 		if((p>>PD4)&1){
 			if(mode_array[global_mode].encoder)
@@ -119,10 +124,9 @@ ISR(INT1_vect)
 		IF_UPDATE = 1;
 		EIFR &= ~(1<<INTF1);
 	}	
-	_delay_ms(100);
+//	_delay_ms(100);
 	wdt_reset();
-	
-	PORTD &= ~(1<<PD5);
+
 //	sei();
 }
 void writeNumber(unsigned int value){
@@ -137,10 +141,10 @@ void writeNumber(unsigned int value){
 }
 void writeRPM(){
 	nokia_gotoxy(11, 0);
-	nokia_puts_prgm(PSTR("РѕР±СЂ"));
+	nokia_puts_prgm(PSTR("обр"));
 
 	nokia_gotoxy(11, 1);
-	nokia_puts_prgm(PSTR("РјРёРЅ"));
+	nokia_puts_prgm(PSTR("мин"));
 }
 
 void writeCurrent(){
@@ -162,6 +166,7 @@ void writeMode(){
 	nokia_gotoxy(11, 4);
 	writeNumber(global_mode);
 }
+
 
 
 //////////////////////////////////////////////////////////////  
@@ -187,7 +192,7 @@ int main(void)
 			writeCurrent();
 			writeMode();
 		//	nokia_gotoxy(11, 2);
-	//		nokia_puts_prgm(PSTR("РєРёСЂСЏ"));
+	//		nokia_puts_prgm(PSTR("киря"));
 			
 			
 		}
